@@ -40,6 +40,6 @@ with open('team_tags.txt') as tmj:
         }])
 
 
-with open('team_profiles.dat','w') as of:
+with open('team_profiles.json','w') as of:
     for p in team_profiles:
         of.write('%s\t%s\n'%(json.dumps(p[0]),json.dumps(p[1])))

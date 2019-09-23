@@ -25,6 +25,6 @@ with open('repo_topics.json') as rj:
         topics = json.loads(line[1])
         repo_profiles[repo]['topics'] = topics
 
-with open('repo_profiles.dat','w') as of:
+with open('repo_profiles.json','w') as of:
     for repo in repo_profiles:
-        of.write('%s\t%s\n'%(repo,repo_profiles[repo]))
+        of.write('%s\t%s\n'%(repo,json.dumps(repo_profiles[repo])))
