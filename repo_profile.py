@@ -2,17 +2,10 @@ import json
 
 
 repo_profiles = {}
-with open('repos.txt') as rt:
-    for rl in rt.readlines():
-        repo = rl.strip()
-        repo_profiles[repo] = {}
-
 with open('repo_features.json') as rj:
     for rl in rj.readlines():
         line = rl.split('\t')
         repo = line[0]
-        if not repo in repo_profiles:
-            continue
         features = json.loads(line[1])
         repo_profiles[repo] = features
         repo_profiles[repo]['subscribers'] = repo_profiles[repo].pop('subscribers_count')

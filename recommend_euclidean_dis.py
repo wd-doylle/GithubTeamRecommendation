@@ -2,26 +2,28 @@ import json
 import pandas as pd
 
 repo_profiles = {}
+repo_teams = {}
 with open('repo_profiles.json') as rj:
     for rl in rj.readlines():
         line = rl.split('\t')
         repo = line[0]
         profile = json.loads(line[1])
         repo_profiles[repo] = profile
+        repo_teams[repo] = repo_profiles[repo].pop('teams')
     
 team_profiles = []
 teams = []
 with open('team_profiles.json') as tj:
     for tl in tj.readlines():
         line = tl.split('\t')
-        team = json.loads(line[0])
+        team = line[0]
         profile = json.loads(line[1])
         team_profiles.append(profile)
         teams.append(team)
 
 repo_profiles_df = pd.DataFrame(repo_profiles).transpose()
 repo_profiles_df.fillna('',inplace=True)
-team_profiles_df = pd.DataFrame(team_profiles,index=[str(t) for t in teams])
+team_profiles_df = pd.DataFrame(team_profiles,index=teams)
 team_profiles_df.rename(columns={
                                    'repo_size':'size',
                                    'repo_forks':'forks',
@@ -56,7 +58,7 @@ def euclidean_distance(p1,p2):
 from queue import PriorityQueue
 
 
-with open('recommenda_euclidean.json','w') as oj:
+with open('recommend_euclidean.json','w') as oj:
     cnt = 0
     for repo,repo_profile in repo_profiles_df.iterrows():
         cnt += 1
@@ -66,6 +68,8 @@ with open('recommenda_euclidean.json','w') as oj:
         rec = []
         queue = PriorityQueue()
         for team,team_profile in team_profiles_df.iterrows():
+            if team in repo_teams[repo]:
+                continue
             dis = euclidean_distance(repo_profile,team_profile)
             queue.put_nowait((-dis,team))
             if queue.qsize() > 10:
