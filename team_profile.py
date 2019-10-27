@@ -63,6 +63,6 @@ for repo in repo_profiles_new:
     if repo in repo_teams:
         repo_profiles_new[repo]['teams'].extend(repo_teams[repo])
 
-with open('repo_profiles.json','w') as of:
+with open('repo_profiles_new.json','w') as of:
     for repo in repo_profiles_new:
         of.write('%s\t%s\n'%(repo,json.dumps(repo_profiles[repo])))

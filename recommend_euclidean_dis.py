@@ -3,7 +3,7 @@ import pandas as pd
 
 repo_profiles = {}
 repo_teams = {}
-with open('repo_profiles.json') as rj:
+with open('repo_profiles_new.json') as rj:
     for rl in rj.readlines():
         line = rl.split('\t')
         repo = line[0]
@@ -34,6 +34,7 @@ team_profiles_df.rename(columns={
                                },inplace=True)
 
 numerics = ['size','forks','subscribers','watchers']
+non_numerics = ['languages','topics']
 
 min = repo_profiles_df[numerics].min()
 max = repo_profiles_df[numerics].max()
@@ -42,41 +43,42 @@ team_profiles_df[numerics] = (team_profiles_df[numerics]-min)/(max-min)
 
 import numpy as np
 
-def euclidean_distance(p1,p2):
-    distance = np.linalg.norm(p1[numerics]-p2[numerics])**2
-    langs = set(p1['languages']).union(p2['languages'])
-    topics = set(p1['topics']).union(p2['topics'])
-    p1_langs = pd.Series([lang in p1['languages'] for lang in langs])/np.sqrt(len(langs))
-    p2_langs = pd.Series([lang in p2['languages'] for lang in langs])/np.sqrt(len(langs))
-    p1_topics = pd.Series([topic in p1['topics'] for topic in topics])/np.sqrt(len(topics))
-    p2_topics = pd.Series([topic in p2['topics'] for topic in topics])/np.sqrt(len(topics))
-    distance += np.linalg.norm(p1_langs-p2_langs)**2 + np.linalg.norm(p1_topics-p2_topics)**2
-    distance = np.sqrt(distance)
-    
-    return distance
 
-from queue import PriorityQueue
+euclidean_numerics_v = np.vectorize(
+    lambda p1,p2: np.linalg.norm(p1-p2)**2,signature="(n),(n)->()"
+)
+def euclidean_non_numerics(p1,p2):
+    langs = set(p1[0]).union(p2[0])
+    topics = set(p1[1]).union(p2[1])
+    p1_langs = pd.Series([lang in p1[0] for lang in langs])/np.sqrt(len(langs))
+    p2_langs = pd.Series([lang in p2[0] for lang in langs])/np.sqrt(len(langs))
+    p1_topics = pd.Series([topic in p1[1] for topic in topics])/np.sqrt(len(topics))
+    p2_topics = pd.Series([topic in p2[1] for topic in topics])/np.sqrt(len(topics))
+    return np.linalg.norm(p1_langs-p2_langs)**2 + np.linalg.norm(p1_topics-p2_topics)**2
+euclidean_non_numerics_v =  np.vectorize(euclidean_non_numerics,signature="(n),(n)->()")
+euclidean_v = np.vectorize(lambda num,non_num:np.sqrt(num+non_num))
 
 
-with open('recommend_euclidean.json','w') as oj:
-    cnt = 0
-    for repo,repo_profile in repo_profiles_df.iterrows():
-        cnt += 1
-        # if cnt > 10:
-        #     break
-        print(cnt)
-        rec = []
-        queue = PriorityQueue()
-        for team,team_profile in team_profiles_df.iterrows():
-            if team in repo_teams[repo]:
+with open('recommend_euclidean.json','a') as oj:
+    with open('recommend_euclidean.bp','r+') as rb:
+        bp = int(rb.read())
+        cnt = 0
+        for repo,repo_profile in repo_profiles_df.iterrows():
+            if cnt < bp:
+                cnt += 1
                 continue
-            dis = euclidean_distance(repo_profile,team_profile)
-            queue.put_nowait((-dis,team))
-            if queue.qsize() > 10:
-                queue.get_nowait()
-        while queue.qsize()>0:
-            rec.append(queue.get_nowait())
-        oj.write(repo+'\t')
-        for tm in rec:
-            oj.write(json.dumps(tm)+'\t')
-        oj.write('\n')
+            print(cnt)
+            
+            teams = [t for t,p in team_profiles_df.iterrows() if not t in repo_teams[repo]]
+            dis_num = euclidean_numerics_v(repo_profile[numerics],team_profiles_df.loc[teams,numerics])
+            dis_non_num = euclidean_non_numerics_v(repo_profile[non_numerics],team_profiles_df.loc[teams,non_numerics])
+            dis = euclidean_v(dis_num,dis_non_num)
+            idxs = sorted(list(range(len(teams))),key=lambda i:dis[i])
+            oj.write(repo+'\t')
+            for i in range(50):
+                oj.write(json.dumps(teams[idxs[i]])+'\t')
+            oj.write('\n')
+                
+            cnt += 1
+            rb.seek(0)
+            rb.write(str(cnt))
