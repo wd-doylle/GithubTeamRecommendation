@@ -36,9 +36,8 @@ euclidean_non_numerics_v =  np.vectorize(euclidean_non_numerics,signature="(n),(
 repos = repo_profiles.index
 
 cuda0 = torch.device('cuda:0')
-repo_num = [repo_profiles[numerics].values]*repo_profiles.shape[0]
-repo_num = torch.tensor(repo_num,device=cuda0,requires_grad=False)
-dis_num = ((repo_num.transpose(0,1)-repo_num)**2).sum(2)
+repo_num = torch.tensor(repo_profiles[numerics].values,device=cuda0,requires_grad=False)
+dis_num = repo_num.sum(1,keepdim=True)**2+repo_num.sum(1,keepdim=True).transpose(0,1)**2-2*repo_num.matmul(repo_num.transpose(0,1))
 
 cnt = 0
 dis_non_num = []
