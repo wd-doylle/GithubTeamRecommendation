@@ -49,6 +49,6 @@ for repo,repo_profile in repo_profiles.iterrows():
 dis = dis_num+dis_non_num
 dis = dis.cpu().numpy()
 k = 50
-with open('repo_graph_new.json','w') as rj:
+with open('repo_graph.json','w') as rj:
     for i,d in enumerate(dis):
         rj.write("%s\t%s\n"%(repos[i],json.dumps(d)))
