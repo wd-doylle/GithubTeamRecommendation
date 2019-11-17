@@ -28,10 +28,24 @@ repo_profiles[numerics] = (repo_profiles[numerics]-minn)/(maxx-minn)
 
 
 def euclidean_non_numerics(p1,p2):
-    sm_langs = difflib.SequenceMatcher(None,p1[0],p2[0])
-    sm_topics = difflib.SequenceMatcher(None,p1[1],p2[1])
-    return sm_langs.ratio()**2 + sm_topics.ratio()**2
+    c = len(set(p1[0]).intersection(set(p2[0])))
+    sm_langs = c/(len(p1[0])+len(p2[0])-c)
+    c = len(set(p1[1]).intersection(set(p2[1])))
+    sm_topics = c/(len(p1[1])+len(p2[1])-c)
+    return sm_langs**2 + sm_topics**2
 euclidean_non_numerics_v =  np.vectorize(euclidean_non_numerics,signature="(n),(n)->()")
+
+def sort_to_k(ary,k,key=lambda x:x,reversed=False):
+    k = min(k,len(ary))
+    for i in range(k):
+        for j in range(len(ary)-1-i):
+            if not reversed:
+                if key(ary[len(ary)-1-j]) < key(ary[len(ary)-2-j]):
+                    ary[len(ary)-1-j],ary[len(ary)-2-j] = ary[len(ary)-2-j],ary[len(ary)-1-j]
+            else:
+                if key(ary[len(ary)-1-j]) > key(ary[len(ary)-2-j]):
+                    ary[len(ary)-1-j],ary[len(ary)-2-j] = ary[len(ary)-2-j],ary[len(ary)-1-j]
+    return ary
 
 repos = repo_profiles.index
 
@@ -41,14 +55,13 @@ dis_num = (repo_num**2).sum(1,keepdim=True)+(repo_num**2).sum(1,keepdim=True).tr
 
 cnt = 0
 dis_non_num = []
-for repo,repo_profile in repo_profiles.iterrows():
-    cnt += 1
-    print(cnt)
-    dis_non_num.append(euclidean_non_numerics_v(repo_profile[non_numerics],repo_profiles[non_numerics]))
-    dis_non_num = torch.tensor(dis_non_num,device=cuda0,requires_grad=False)
-dis = dis_num+dis_non_num
-dis = dis.cpu().numpy()
 k = 50
-with open('repo_graph.json','w') as rj:
-    for i,d in enumerate(dis):
-        rj.write("%s\t%s\n"%(repos[i],json.dumps(d)))
+with open('repo_graph_sim.json','w') as rj:
+    for repo,repo_profile in repo_profiles.iterrows():
+        cnt += 1
+        print(cnt)
+        dis_non_num = torch.tensor(euclidean_non_numerics_v(repo_profile[non_numerics],repo_profiles[non_numerics]),device=cuda0,requires_grad=False)
+        dis = dis_num[cnt-1]+dis_non_num
+        dis = dis.cpu().numpy()
+
+        rj.write("%s\t%s\n"%(repo,json.dumps(list(dis))))

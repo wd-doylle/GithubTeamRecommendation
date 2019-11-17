@@ -42,15 +42,17 @@ repo_profiles_df[numerics] = (repo_profiles_df[numerics]-minn)/(maxx-minn)
 team_profiles_df[numerics] = (team_profiles_df[numerics]-minn)/(maxx-minn)
 
 import numpy as np
-import difflib
+import scipy
 
 euclidean_numerics_v = np.vectorize(
     lambda p1,p2: np.linalg.norm(p1-p2)**2,signature="(n),(n)->()"
 )
 def euclidean_non_numerics(p1,p2):
-    sm_langs = difflib.SequenceMatcher(None,p1[0],p2[0])
-    sm_topics = difflib.SequenceMatcher(None,p1[1],p2[1])
-    return sm_langs.ratio()**2 + sm_topics.ratio()**2
+    c = len(set(p1[0]).intersection(set(p2[0])))
+    sm_langs = c/(len(p1[0])+len(p2[0])-c)
+    c = len(set(p1[1]).intersection(set(p2[1])))
+    sm_topics = c/(len(p1[1])+len(p2[1])-c)
+    return sm_langs**2 + sm_topics**2
 euclidean_non_numerics_v =  np.vectorize(euclidean_non_numerics,signature="(n),(n)->()")
 euclidean_v = np.vectorize(lambda num,non_num:np.sqrt(num+non_num))
 
@@ -83,7 +85,7 @@ with open('recommend_euclidean.json','a') as oj:
             dis = euclidean_v(dis_num,dis_non_num)
             idxs = sort_to_k(list(range(len(teams))),k,key=lambda i:dis[i])
             oj.write(repo+'\t')
-            for i in range(50):
+            for i in range(k):
                 oj.write(json.dumps(teams[idxs[i]])+'\t')
             oj.write('\n')
                 
