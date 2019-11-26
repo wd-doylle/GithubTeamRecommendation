@@ -39,11 +39,12 @@ def sort_to_k(ary,k,key=lambda x:x,reversed=False):
 
 cnt = 0
 steps = 100
-alpha = 0.85
+alpha = 0.95
 transfer = 1/torch.tensor(repo_graph,requires_grad=False,device=cuda0)
 for i in range(len(repos)):
     transfer[i][i] = 0
 transfer /= transfer.sum(0)
+transfer[transfer!=transfer] = 0
 
 k=50
 with open('recommend_random_walk_sim.json','w') as rj:
@@ -51,8 +52,7 @@ with open('recommend_random_walk_sim.json','w') as rj:
         print(cnt)
         page_rank = torch.zeros(len(repos),requires_grad=False,device=cuda0)
         page_rank[cnt] = 1
-        for i in range(steps):
-            page_rank = alpha*page_rank.matmul(transfer) + (1-alpha)/len(repos)
+        page_rank = page_rank.matmul(transfer) + (1-alpha)/len(repos)
         page_rank = page_rank.cpu().numpy()
         team_rank = {}
         for i,p_r in enumerate(page_rank):
