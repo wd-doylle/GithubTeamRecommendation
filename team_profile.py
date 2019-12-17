@@ -13,7 +13,6 @@ repo_profiles_new = {}
 repo_teams = {}
 with open('team_tags.txt') as tmj:
     for tml in tmj.readlines():
-        tml.split('\t')
         tm,dur,topics,lang,contr,center,aspl,ac,cen,sizes,repo_contributors,lang_diff,topic_diff,size_diff,wtch_diff,fork_diff,sbscrb_diff,feature_diff = tml.split('\t')
         # dur = int(dur)
         # aspl = json.loads(aspl)['all']

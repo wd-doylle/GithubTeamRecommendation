@@ -53,7 +53,7 @@ def sort_to_k(ary,k,key=lambda x:x,reversed=False):
 
 
 cnt = 0
-steps = 100
+steps = 1
 alpha = 0.95
 transfer = torch.tensor(team_graph,requires_grad=False,dtype=torch.float32,device=cuda0)
 transfer /= transfer.sum(0)
