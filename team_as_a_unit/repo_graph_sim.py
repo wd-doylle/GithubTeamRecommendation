@@ -24,7 +24,6 @@ non_numerics = ['languages','topics']
 minn = repo_profiles[numerics].min()
 maxx = repo_profiles[numerics].max()
 repo_profiles[numerics] = (repo_profiles[numerics]-minn)/(maxx-minn)
-repo_profiles[numerics] = (repo_profiles[numerics]-minn)/(maxx-minn)
 
 
 def euclidean_non_numerics(p1,p2):
