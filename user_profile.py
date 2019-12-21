@@ -46,7 +46,7 @@ for user in user_repo:
         repo_watchers = sum(watchers)/len(watchers)
         subscribers.append(repo_profiles[repo]['subscribers'])
         repo_subscribers = sum(subscribers)/len(subscribers)
-        user_profiles.append([tm,{
+        user_profiles.append([user,{
             'topics':list(topics),
             'languages':list(languages),
             'repo_size':repo_size,

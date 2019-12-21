@@ -1,5 +1,9 @@
 import json
+from pymongo import MongoClient
 
+
+client = MongoClient()
+db = client['gtr']
 
 repo_profiles = {}
 with open('repo_features.json') as rj:
@@ -26,6 +30,41 @@ with open('repo_topics.json') as rj:
         topics = json.loads(line[1])
         repo_profiles[repo]['topics'] = topics
 
-with open('repo_profiles.json','w') as of:
-    for repo in repo_profiles:
-        of.write('%s\t%s\n'%(repo,json.dumps(repo_profiles[repo])))
+db.drop_collection('repo_profiles')
+r_ps = db['repo_profiles']
+cnt = 0
+for repo in repo_profiles:
+    print(cnt)
+    profile = repo_profiles[repo]
+    profile['repo'] = repo
+    r_ps.insert_one(profile)
+    cnt += 1
+
+repo_teams = {}
+with open('team_tags.txt') as tmj:
+    for tml in tmj.readlines():
+        tm,dur,topics,lang,contr,center,aspl,ac,cen,sizes,repo_contributors,lang_diff,topic_diff,size_diff,wtch_diff,fork_diff,sbscrb_diff,feature_diff = tml.split('\t')
+        # dur = int(dur)
+        # aspl = json.loads(aspl)['all']
+        # ac = json.loads(ac)['all']
+        # cen = json.loads(cen)['all']
+        # size = len(tm)
+        for repo in json.loads(sizes):
+            if not repo in repo_teams:
+                repo_teams[repo] = []
+            repo_teams[repo].append(tm)
+
+db.drop_collection('repo_teams')
+hr_ps = db['repo_teams']
+cnt = 0
+for repo in repo_teams:
+    print(cnt)
+    r_ts = []
+    for tm in repo_teams[repo]:
+        r_t = {
+            'repo':repo,
+            'team':tm
+        }
+        r_ts.append(r_t)
+    hr_ps.insert_one(r_ts)
+    cnt += 1
