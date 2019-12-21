@@ -31,7 +31,6 @@ with open("contributors.json") as rj:
         if not repo in repos:
             continue
         print(cnt)
-        repo_core = []
         user_contri = {}
         for c in j['contributors']:
             user_contri[c['login']] = c['contributions']
@@ -39,16 +38,23 @@ with open("contributors.json") as rj:
         cntr = sort_to_k(list(user_contri),key = lambda x: user_contri[x], reversed=True,k=kk)
         repo_core = set(cntr[:kk])
         repo_target = []
-        for doc in repo_teams.find({'repo':repo},['team']):
-            tm = doc['team']
+        repo_core_team = []
+        for tm in repo_teams.find_one({'repo':repo})['teams']:
+            is_target = False
             for mem in json.loads(tm):
                 if not mem in repo_core:
-                    repo_target.append(tm)
+                    is_target = True
                     break
-        r_ct.insert_one({
-            'repo':repo,
-            'core':cntr[:kk],
-            'targets':repo_target
-        })
-
+            if is_target:
+                repo_target.append(tm)
+            else:
+                repo_core_team.append(tm)
+        if repo_target:
+            r_ct.insert_one({
+                'repo':repo,
+                'core':cntr[:kk],
+                'core_team':repo_core_team,
+                'targets':repo_target
+            })
+        
         cnt += 1

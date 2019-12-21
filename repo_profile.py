@@ -59,12 +59,8 @@ hr_ps = db['repo_teams']
 cnt = 0
 for repo in repo_teams:
     print(cnt)
-    r_ts = []
-    for tm in repo_teams[repo]:
-        r_t = {
-            'repo':repo,
-            'team':tm
-        }
-        r_ts.append(r_t)
-    hr_ps.insert_one(r_ts)
+    hr_ps.insert_one({
+        'repo':repo,
+        'teams':repo_teams[repo]
+    })
     cnt += 1
