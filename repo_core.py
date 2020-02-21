@@ -53,8 +53,8 @@ with open("contributors.json") as rj:
             r_ct.insert_one({
                 'repo':repo,
                 'core':cntr[:kk],
-                'core_team':repo_core_team,
+                'core_teams':repo_core_team,
                 'targets':repo_target
             })
         
-        cnt += 1
+            cnt += 1
