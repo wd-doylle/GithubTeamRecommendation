@@ -47,15 +47,11 @@ for i,row in enumerate(repo_core_targets.find()):
                 continue
             team_repo_contri_target[tm_ind][repo] += user_contri[mem]
     for user in row['core_users']:
-        if user == '20100507':
-            print(row)
         usr_ind = user_ind[user]
         if not usr_ind in user_repo_contri:
             user_repo_contri[usr_ind] = {}
         user_repo_contri[usr_ind][repo] = row['core_users'][user]
     for user in row['target_users']:
-        # if user == '20100507':
-        #     print(repo)
         usr_ind = user_ind[user]
         if not usr_ind in user_repo_contri_target:
             user_repo_contri_target[usr_ind] = {}

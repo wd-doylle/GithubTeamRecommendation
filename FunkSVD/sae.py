@@ -66,6 +66,8 @@ for epoch in range(1, nb_epoch + 1):
             train_loss += np.sqrt(loss.item()*mean_corrector)
             s += 1.
             optimizer.step()
+        del input
+        del target
     print('epoch: '+str(epoch)+' loss: '+str(train_loss/s))
 
 
@@ -106,30 +108,33 @@ def sort_to_k(ary,k,key=lambda x:x,reversed=False):
 
 k = 30
 
+
 user_pred = {}
-with open("sae_user_score.json",'w') as f:
-    for i,user in enumerate(user_interests):
-        if not user in team_members:
-            continue
-        print(i)
-        if not user in user_pred:
-            input = torch.zeros(num_repos,device=cuda0)
-            for repo in user_interests[user]:
-                input[repo] = user_interests[user][repo]
-            user_pred[user] = sae(input).cpu()
-        pred = user_pred[user]
-        for n2 in graph[user]:
-            if not n2 in user_interests:
+with torch.no_grad():
+    with open("sae_user_score.json",'w') as f:
+        for i,user in enumerate(user_interests):
+            if not user in team_members:
                 continue
-            if not n2 in user_pred:
+            print(i)
+            if not user in user_pred:
                 input = torch.zeros(num_repos,device=cuda0)
-                for repo in user_interests[n2]:
-                    input[repo] = user_interests[n2][repo]
-                user_pred[n2] = sae(input).cpu()
-            pred += user_pred[n2]*graph[user][n2]
-        # pred = pred.cpu()
-        recs = sort_to_k(list(range(len(pred))),k,key=lambda i:pred[i],reversed=True)
-        f.write(str(user))
-        for rec in recs[:k]:
-            f.write("\t%s"%json.dumps((rec,pred[rec].item())))
-        f.write('\n')
+                for repo in user_interests[user]:
+                    input[repo] = user_interests[user][repo]
+                user_pred[user] = sae(input).cpu()
+                del input
+            pred = user_pred[user]
+            for n2 in graph[user]:
+                if not n2 in user_interests:
+                    continue
+                if not n2 in user_pred:
+                    input = torch.zeros(num_repos,device=cuda0)
+                    for repo in user_interests[n2]:
+                        input[repo] = user_interests[n2][repo]
+                    user_pred[n2] = sae(input).cpu()
+                    del input
+                pred += user_pred[n2]*graph[user][n2]
+            recs = sort_to_k(list(range(len(pred))),k,key=lambda i:pred[i],reversed=True)
+            f.write(str(user))
+            for rec in recs[:k]:
+                f.write("\t%s"%json.dumps((rec,pred[rec].item())))
+            f.write('\n')

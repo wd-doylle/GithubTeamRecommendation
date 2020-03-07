@@ -12,7 +12,7 @@ with open("user_profiles.json") as uj:
         users.append(line['user'])
 
 repos = []
-with open("repo_profiles.json") as uj:
+with open("repo_core_targets.json") as uj:
     for l in uj.readlines():
         line = json.loads(l)
         repos.append(line['repo'])
