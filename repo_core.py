@@ -37,6 +37,9 @@ with open("contributors.json") as rj:
     for l in rj.readlines():
         j = json.loads(l)
         repo = j['repo']
+        if repo == 'decko-commons/decko':
+            print(repo in repo_teams)
+            
         if not repo in repo_teams:
             continue
         print(cnt)
@@ -62,6 +65,8 @@ with open("contributors.json") as rj:
                 repo_target.append(tm)
             else:
                 repo_core_team.append(tm)
+        if not repo_target:
+            continue
         r_ct.insert_one({
             'repo':repo,
             'core_users':{c:user_contri[c] for c in cntr[:kk]},

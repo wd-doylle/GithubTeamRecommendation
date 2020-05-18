@@ -49,29 +49,31 @@ for t_p in team_profiles.find():
 
 
 repo_core_targets = db['repo_core_targets']
-db.drop_collection('recommend_social_core')
-recommend_social_core = db['recommend_social_core'] 
-
 cnt = 0
-k=50
+ks = [5,10,30,50]
+files = [open("recommend_social_%d.json"%k,'w') for k in ks]
 for r_ct in repo_core_targets.find():
+    if cnt < 62546:
+        cnt += 1
+        continue
     print(cnt)
     team_score = {}
-    for user in r_ct['core']:
+    for user in r_ct['core_users']:
         if not user in node_ind:
             continue
         for u2 in graph[node_ind[user]]:
             if not nodes[u2] in user_teams:
                 continue
             for tm in user_teams[nodes[u2]]:
-                if tm in r_ct['core_team']:
+                if tm in r_ct['core_teams']:
                     continue
                 if not tm in team_score:
                     team_score[tm] = 0
                 team_score[tm] += graph[node_ind[user]][u2]
-    tms = sort_to_k(list(team_score),k,key=lambda i:team_score[i],reversed=True)
-    recommend_social_core.insert_one({
-        'repo':r_ct['repo'],
-        'rec':[(tms[i],team_score[tms[i]]) for i in range(min(k,len(tms)))]
-    })
+    tms = sort_to_k(list(team_score),ks[-1],key=lambda i:team_score[i],reversed=True)
+    for ii,k in enumerate(ks):
+        files[ii].write(r_ct['repo'])
+        for i in range(min(k,len(tms))):
+            files[ii].write('\t'+json.dumps((tms[i],team_score[tms[i]])))
+        files[ii].write("\n")
     cnt += 1

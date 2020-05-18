@@ -1,95 +1,124 @@
 import json
 import torch
 import numpy as np
-
-user_interests = {}
-users_train = set()
-with open('../user_interests_train.json') as tmj:
-    for tml in tmj.readlines():
-        line = json.loads(tml)
-        user_interests[line['user']] = {int(r):line['interests'][r] for r in line['interests']}
-        users_train.add(line['user'])
-
-with open('../user_interests_target.json') as tmj:
-    for tml in tmj.readlines():
-        line = json.loads(tml)
-        user_interests[line['user']] = {int(r):line['interests'][r] for r in line['interests']}
-
-print(len(user_interests))
-print(len(users_train))
-
-num_repos = 0
-for user in user_interests:
-    total_contri = 0
-    for repo in user_interests[user]:
-        num_repos = max(num_repos,repo+1)
-        total_contri += user_interests[user][repo]
-    for repo in user_interests[user]:
-        user_interests[user][repo] /= total_contri
+import argparse
 
 
 class SAE(torch.nn.Module):
-    def __init__(self, ):
+    def __init__(self, latent_dim):
         super(SAE, self).__init__()
-        self.fc1 = torch.nn.Linear(num_repos, 64)
-        self.fc2 = torch.nn.Linear(64, num_repos)
+        self.latent_dim = latent_dim
+        self.fc1 = torch.nn.Linear(num_repos, latent_dim)
+        self.fc2 = torch.nn.Linear(latent_dim, num_repos)
         self.activation = torch.nn.Sigmoid()
     def forward(self, x):
         x = self.activation(self.fc1(x))
         x = self.fc2(x)
         return x
 
+def train(model,users_train,user_interests,criterion,optimizer,num_epochs):
+    for epoch in range(1, num_epochs + 1):
+        train_loss = 0
+        s = 0.
+        for user in users_train:
+            input = torch.zeros(num_repos,device=cuda0)
+            for repo in user_interests[user]:
+                input[repo] = user_interests[user][repo]
+            target = input.clone()
+            if torch.sum(target.data > 0) > 0:
+                output = model(input)
+                target.require_grad = False
+                output[target == 0] = 0
+                loss = criterion(output, target)
+                mean_corrector = num_repos/float(torch.sum(target.data > 0) + 1e-10)
+                loss.backward()
+                # train_loss += np.sqrt(loss.item())
+                train_loss += np.sqrt(loss.item()*mean_corrector)
+                s += 1.
+                optimizer.step()
+        print('epoch: '+str(epoch)+' loss: '+str(train_loss/s))
 
-cuda0 = torch.device('cuda:0')
-sae = SAE()
-sae.cuda(device=cuda0)
-criterion = torch.nn.MSELoss()
-optimizer = torch.optim.RMSprop(sae.parameters(), lr = 0.001, weight_decay = 0.5)
+        torch.save(model.state_dict(),'SAE_%d_epoch%d.pth'%(model.latent_dim,epoch))
 
 
-nb_epoch = 1
-for epoch in range(1, nb_epoch + 1):
-    train_loss = 0
-    s = 0.
-    for user in users_train:
-        input = torch.zeros(num_repos,device=cuda0)
+def predict(model,user_interests,k,fuse_rate):
+    team_members = set()
+    with open("../team_members.json") as tj:
+        for l in tj.readlines():
+            line = json.loads(l)
+            team_members.update(line['members'])
+
+    gg = {}
+    with open("../user_social.json") as nj:
+        gg = json.load(nj)
+
+    graph = {}
+    for n1 in gg:
+        ss = 0
+        graph[int(n1)] = {}
+        for n2 in gg[n1]:
+            ss += gg[n1][n2]
+        for n2 in gg[n1]:
+            graph[int(n1)][int(n2)] = gg[n1][n2]/ss
+
+
+    user_pred = {}
+    with torch.no_grad():
+        with open("sae_user_score.json",'w') as f:
+            for i,user in enumerate(user_interests):
+                if not user in team_members:
+                    continue
+                print(i)
+                if not user in user_pred:
+                    input = torch.zeros(num_repos,device=cuda0)
+                    for repo in user_interests[user]:
+                        input[repo] = user_interests[user][repo]
+                    user_pred[user] = model(input).cpu()
+                    del input
+                pred = user_pred[user]*(1-fuse_rate)
+                for n2 in graph[user]:
+                    if not n2 in user_interests:
+                        continue
+                    if not n2 in user_pred:
+                        input = torch.zeros(num_repos,device=cuda0)
+                        for repo in user_interests[n2]:
+                            input[repo] = user_interests[n2][repo]
+                        user_pred[n2] = model(input).cpu()
+                        del input
+                    pred += fuse_rate*user_pred[n2]*graph[user][n2]
+                recs = sort_to_k(list(range(len(pred))),k,key=lambda i:pred[i],reversed=True)
+                f.write(str(user))
+                for rec in recs[:k]:
+                    f.write("\t%s"%json.dumps((rec,pred[rec].item())))
+                f.write('\n')
+
+def load_dateset():
+    user_interests = {}
+    users_train = set()
+    with open('../user_interests_train.json') as tmj:
+        for tml in tmj.readlines():
+            line = json.loads(tml)
+            user_interests[line['user']] = {int(r):line['interests'][r] for r in line['interests']}
+            users_train.add(line['user'])
+
+    with open('../user_interests_target.json') as tmj:
+        for tml in tmj.readlines():
+            line = json.loads(tml)
+            user_interests[line['user']] = {int(r):line['interests'][r] for r in line['interests']}
+
+    print(len(user_interests))
+    print(len(users_train))
+
+    num_repos = 0
+    for user in user_interests:
+        total_contri = 0
         for repo in user_interests[user]:
-            input[repo] = user_interests[user][repo]
-        target = input.clone()
-        if torch.sum(target.data > 0) > 0:
-            output = sae(input)
-            target.require_grad = False
-            output[target == 0] = 0
-            loss = criterion(output, target)
-            mean_corrector = num_repos/float(torch.sum(target.data > 0) + 1e-10)
-            loss.backward()
-            train_loss += np.sqrt(loss.item()*mean_corrector)
-            s += 1.
-            optimizer.step()
-        del input
-        del target
-    print('epoch: '+str(epoch)+' loss: '+str(train_loss/s))
-
-
-
-team_members = set()
-with open("../team_members.json") as tj:
-    for l in tj.readlines():
-        line = json.loads(l)
-        team_members.update(line['members'])
-
-gg = {}
-with open("../user_social.json") as nj:
-    gg = json.load(nj)
-
-graph = {}
-for n1 in gg:
-    ss = 0
-    graph[int(n1)] = {}
-    for n2 in gg[n1]:
-        ss += gg[n1][n2]
-    for n2 in gg[n1]:
-        graph[int(n1)][int(n2)] = gg[n1][n2]/ss
+            num_repos = max(num_repos,repo+1)
+            total_contri += user_interests[user][repo]
+        for repo in user_interests[user]:
+            user_interests[user][repo] /= total_contri
+    
+    return user_interests,users_train,num_repos
 
 
 def sort_to_k(ary,k,key=lambda x:x,reversed=False):
@@ -105,36 +134,29 @@ def sort_to_k(ary,k,key=lambda x:x,reversed=False):
     return ary
 
 
+if __name__ == '__main__':
 
-k = 30
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--num_epochs", type=int, default=1, help="number of epochs of training")
+    parser.add_argument("--fuse_rate", type=float, default=0.3)
+    parser.add_argument("--pretrained", type=bool, default=False)
+    parser.add_argument("--pretrained_path", type=str, default=None)
+    parser.add_argument("--latent_dim", type=int, default=128)
+    parser.add_argument("--k", type=int, default=30)
 
+    opt = parser.parse_args()
+    print(opt)
 
-user_pred = {}
-with torch.no_grad():
-    with open("sae_user_score.json",'w') as f:
-        for i,user in enumerate(user_interests):
-            if not user in team_members:
-                continue
-            print(i)
-            if not user in user_pred:
-                input = torch.zeros(num_repos,device=cuda0)
-                for repo in user_interests[user]:
-                    input[repo] = user_interests[user][repo]
-                user_pred[user] = sae(input).cpu()
-                del input
-            pred = user_pred[user]
-            for n2 in graph[user]:
-                if not n2 in user_interests:
-                    continue
-                if not n2 in user_pred:
-                    input = torch.zeros(num_repos,device=cuda0)
-                    for repo in user_interests[n2]:
-                        input[repo] = user_interests[n2][repo]
-                    user_pred[n2] = sae(input).cpu()
-                    del input
-                pred += user_pred[n2]*graph[user][n2]
-            recs = sort_to_k(list(range(len(pred))),k,key=lambda i:pred[i],reversed=True)
-            f.write(str(user))
-            for rec in recs[:k]:
-                f.write("\t%s"%json.dumps((rec,pred[rec].item())))
-            f.write('\n')
+    user_interests,users_train,num_repos = load_dateset()
+    
+    cuda0 = torch.device('cuda:0')
+    sae = SAE(opt.latent_dim)
+    sae.cuda(device=cuda0)
+    if opt.pretrained:
+        sae.load_state_dict(torch.load(opt.pretrained_path))
+    else:
+        criterion = torch.nn.MSELoss()
+        optimizer = torch.optim.RMSprop(sae.parameters(), lr = 0.001, weight_decay = 0.5)
+        train(sae,users_train,user_interests,criterion,optimizer,opt.num_epochs)
+
+    predict(sae,user_interests,opt.k,opt.fuse_rate)

@@ -1,12 +1,9 @@
 import numpy as np
 import json
-# from pymongo import MongoClient
 import torch
 import pandas as pd
 
 
-# client = MongoClient()
-# db = client['gtr']
 
 def sort_to_k(ary,k,key=lambda x:x,reversed=False):
     k = min(k,len(ary))
@@ -21,15 +18,12 @@ def sort_to_k(ary,k,key=lambda x:x,reversed=False):
     return ary
 
 repo_core_teams = {}
-# for doc in db['repo_core_targets'].find():
 with open('repo_core_targets.json') as rj:
-    for l in rj.readlines():
+    for l in rj.readlines()[62546:]:
         doc = json.loads(l)
-        repo_core_teams[doc['repo']] = set(doc['core_team'])
+        repo_core_teams[doc['repo']] = set(doc['core_teams'])
 
 repo_profiles = {}
-# for repo in repo_core_teams:
-#     doc = db['repo_profiles'].find_one({'repo':repo})
 with open('repo_profiles.json') as rj:
     for l in rj.readlines():
         doc = json.loads(l)
@@ -40,11 +34,27 @@ repo_profiles_df = pd.DataFrame(repo_profiles,index={'size','forks','subscribers
 repo_profiles_df.fillna('',inplace=True)
 
 
+user_teams = {}
+with open('team_profiles.json') as rj:
+    for l in rj.readlines():
+        doc = json.loads(l)
+        tm = doc['team']
+        for user in json.loads(tm):
+            if not user in user_teams:
+                user_teams[user] = {}
+            contris = sum(doc['member_contributions'].values())
+            user_teams[user][tm] = {
+                'contri':doc['member_contributions'][user],
+                'degree':doc['member_degrees'][user]
+            }
+
 user_profiles = {}
-# for doc in db['user_profiles'].find():
 with open('user_profiles.json') as rj:
     for l in rj.readlines():
         doc = json.loads(l)
+        user = doc['user']
+        if not user in user_teams:
+            continue
         user_profiles[doc['user']] = doc
 user_profiles_df = pd.DataFrame(user_profiles,index={'repo_size','repo_forks','repo_subscribers','repo_watchers','languages','topics'}).transpose()
 user_profiles_df.rename(columns={
@@ -66,20 +76,6 @@ maxx = repo_profiles_df[numerics].max()
 repo_profiles_df[numerics] = (repo_profiles_df[numerics]-minn)/(maxx-minn)
 user_profiles_df[numerics] = (user_profiles_df[numerics]-minn)/(maxx-minn)
 
-user_teams = {}
-# for tm in db['team_profiles'].distinct('team'):
-with open('team_profiles.json') as rj:
-    for l in rj.readlines():
-        doc = json.loads(l)
-        tm = doc['team']
-        for user in json.loads(tm):
-            if not user in user_teams:
-                user_teams[user] = {}
-            contris = sum(doc['member_contributions'].values())
-            user_teams[user][tm] = {
-                'contri':doc['member_contributions'][user],
-                'degree':doc['member_degrees'][user]
-            }
 
 def euclidean_non_numerics(p1,p2):
     if p1[0] and p2[0]:
@@ -95,30 +91,34 @@ def euclidean_non_numerics(p1,p2):
     return dis_langs**2 + dis_topics**2
 euclidean_non_numerics_v =  np.vectorize(euclidean_non_numerics,signature="(n),(n)->()")
 
-cuda0 = torch.device('cuda:0')
-user_num = torch.tensor(user_profiles_df[numerics].values,device=cuda0,dtype=torch.float16,requires_grad=False)
-batch_size = 10000
+# device = torch.device('cuda:0')
+device = torch.device('cpu')
+user_num = torch.tensor(user_profiles_df[numerics].values,device=device,requires_grad=False)
+batch_size = 5000
 dis_num = []
 for i in range(repo_profiles_df.shape[0]//batch_size+1):
     print(i)
-    r_n = torch.tensor(repo_profiles_df.iloc[i*batch_size:(i+1)*batch_size][numerics].values,device=cuda0,dtype=torch.float16,requires_grad=False)
+    r_n = torch.tensor(repo_profiles_df.iloc[i*batch_size:(i+1)*batch_size][numerics].values,device=device,requires_grad=False)
     d_n = (r_n**2).sum(1,keepdim=True)+(user_num**2).sum(1,keepdim=True).transpose(0,1)-2*r_n.matmul(user_num.transpose(0,1))
     del r_n
-    dis_num.extend(d_n.cpu())
+    # dis_num.extend(d_n.cpu())
+    dis_num.extend(d_n)
     del d_n
 
 cnt = 0
-k = 50
-f_min = open("recommend_interest_min.json",'w')
-f_max = open("recommend_interest_max.json",'w')
-f_mean = open("recommend_interest_mean.json",'w')
-f_contri = open("recommend_interest_contri.json",'w')
-f_degree = open("recommend_interest_degree.json",'w')
+ks = [5,10,30,50]
+f_min = [open("recommend_euclidean_min_%d.json"%k,'w') for k in ks]
+f_max = [open("recommend_euclidean_max_%d.json"%k,'w') for k in ks]
+f_mean = [open("recommend_euclidean_mean_%d.json"%k,'w') for k in ks]
+f_contri = [open("recommend_euclidean_contri_%d.json"%k,'w') for k in ks]
+f_degree = [open("recommend_euclidean_degree_%d.json"%k,'w') for k in ks]
 for repo,repo_profile in repo_profiles_df.iterrows():
     print(cnt)
-    dis_non_num = torch.tensor(euclidean_non_numerics_v(repo_profile[non_numerics],user_profiles_df[non_numerics]),device=cuda0,dtype=torch.float16,requires_grad=False)
-    dis = dis_num[cnt-1].cuda(device=cuda0)+dis_non_num
-    dis = dis.cpu().numpy()
+    dis_non_num = torch.tensor(euclidean_non_numerics_v(repo_profile[non_numerics],user_profiles_df[non_numerics]),device=device,dtype=torch.float16,requires_grad=False)
+    # dis = dis_num[cnt-1].cuda(device=device)+dis_non_num
+    dis = dis_num[cnt-1] + dis_non_num
+    # dis = dis.cpu().numpy()
+    dis = dis.numpy()
     team_scores = {}
     team_score_contri = {}
     team_score_degree = {}
@@ -140,35 +140,36 @@ for repo,repo_profile in repo_profiles_df.iterrows():
         team_score_min[tm] = min(team_scores[tm])
         team_score_max[tm] = max(team_scores[tm])
         team_score_mean[tm] = sum(team_scores[tm])/len(team_scores[tm])
-    tms_min = sort_to_k(list(team_score_min),k,key=lambda i:team_score_min[i])
-    tms_mean = sort_to_k(list(team_score_mean),k,key=lambda i:team_score_mean[i])
-    tms_max = sort_to_k(list(team_score_min),k,key=lambda i:team_score_max[i])
-    tms_contri = sort_to_k(list(team_score_min),k,key=lambda i:team_score_contri[i])
-    tms_degree = sort_to_k(list(team_score_min),k,key=lambda i:team_score_degree[i])
+    tms_min = sort_to_k(list(team_score_min),ks[-1],key=lambda i:team_score_min[i])
+    tms_mean = sort_to_k(list(team_score_mean),ks[-1],key=lambda i:team_score_mean[i])
+    tms_max = sort_to_k(list(team_score_min),ks[-1],key=lambda i:team_score_max[i])
+    tms_contri = sort_to_k(list(team_score_min),ks[-1],key=lambda i:team_score_contri[i])
+    tms_degree = sort_to_k(list(team_score_min),ks[-1],key=lambda i:team_score_degree[i])
     
-    f_min.write(repo)
-    for tm in tms_min[:k]:
-        f_min.write("\t%s"%(json.dumps((tm,float(team_score_min[tm])))))
-    f_min.write('\n')
+    for i,k in enumerate(ks):
+        f_min[i].write(repo)
+        for tm in tms_min[:ks[i]]:
+            f_min[i].write("\t%s"%(json.dumps((tm,float(team_score_min[tm])))))
+        f_min[i].write('\n')
 
-    f_max.write(repo)
-    for tm in tms_max[:k]:
-        f_max.write("\t%s"%(json.dumps((tm,float(team_score_max[tm])))))
-    f_max.write('\n')
-    
-    f_mean.write(repo)
-    for tm in tms_mean[:k]:
-        f_mean.write("\t%s"%(json.dumps((tm,float(team_score_mean[tm])))))
-    f_mean.write('\n')
-    
-    f_contri.write(repo)
-    for tm in tms_contri[:k]:
-        f_contri.write("\t%s"%(json.dumps((tm,float(team_score_contri[tm])))))
-    f_contri.write('\n')
+        f_max[i].write(repo)
+        for tm in tms_max[:ks[i]]:
+            f_max[i].write("\t%s"%(json.dumps((tm,float(team_score_max[tm])))))
+        f_max[i].write('\n')
+        
+        f_mean[i].write(repo)
+        for tm in tms_mean[:ks[i]]:
+            f_mean[i].write("\t%s"%(json.dumps((tm,float(team_score_mean[tm])))))
+        f_mean[i].write('\n')
+        
+        f_contri[i].write(repo)
+        for tm in tms_contri[:ks[i]]:
+            f_contri[i].write("\t%s"%(json.dumps((tm,float(team_score_contri[tm])))))
+        f_contri[i].write('\n')
 
-    f_degree.write(repo)
-    for tm in tms_degree[:k]:
-        f_degree.write("\t%s"%(json.dumps((tm,float(team_score_degree[tm])))))
-    f_degree.write('\n')
+        f_degree[i].write(repo)
+        for tm in tms_degree[:ks[i]]:
+            f_degree[i].write("\t%s"%(json.dumps((tm,float(team_score_degree[tm])))))
+        f_degree[i].write('\n')
     
     cnt += 1

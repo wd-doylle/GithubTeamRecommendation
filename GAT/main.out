@@ -1,0 +1,72 @@
+Batch 0, loss is [0.50703269 ]
+Epoch: 0001 loss_train: 0.22654361 loss_val: 0.16509826 time: 5491.7756s
+Batch 0, loss is [0.06167326 ]
+Epoch: 0002 loss_train: 0.08956996 loss_val: 0.11338156 time: 5486.0540s
+Batch 0, loss is [0.02968819 ]
+Epoch: 0003 loss_train: 0.06209971 loss_val: 0.11489657 time: 5480.8338s
+Batch 0, loss is [0.02578740 ]
+Epoch: 0004 loss_train: 0.05537395 loss_val: 0.14318694 time: 5481.3251s
+Batch 0, loss is [0.03975114 ]
+Epoch: 0005 loss_train: 0.06104095 loss_val: 0.10910633 time: 5487.5141s
+Batch 0, loss is [0.03867659 ]
+Epoch: 0006 loss_train: 0.06513341 loss_val: 0.09677086 time: 5483.1512s
+Batch 0, loss is [0.03893948 ]
+Epoch: 0007 loss_train: 0.06178272 loss_val: 0.08402416 time: 5489.6084s
+Batch 0, loss is [0.00741460 ]
+Epoch: 0008 loss_train: 0.04693172 loss_val: 0.07905163 time: 5485.7374s
+Batch 0, loss is [0.00602104 ]
+Epoch: 0009 loss_train: 0.04380461 loss_val: 0.05653588 time: 5487.5416s
+Batch 0, loss is [0.01464722 ]
+Epoch: 0010 loss_train: 0.04165329 loss_val: 0.06859091 time: 5487.2173s
+Batch 0, loss is [0.01202792 ]
+Epoch: 0011 loss_train: 0.03311715 loss_val: 0.05970749 time: 5488.0908s
+Batch 0, loss is [0.01888437 ]
+Epoch: 0012 loss_train: 0.03341724 loss_val: 0.05950216 time: 5485.7062s
+Batch 0, loss is [0.01924569 ]
+Epoch: 0013 loss_train: 0.02862865 loss_val: 0.04720500 time: 5485.0624s
+Batch 0, loss is [0.01195767 ]
+Epoch: 0014 loss_train: 0.02503015 loss_val: 0.04129262 time: 5487.1758s
+Batch 0, loss is [0.00847286 ]
+Epoch: 0015 loss_train: 0.02303627 loss_val: 0.03906913 time: 5487.6742s
+Optimization Finished!
+Total time elapsed: 82300.3936s
+Loading 15th epoch
+Batch 0
+Prediction Finished!
+Total time elapsed: 262.6887s
+Batch 0, loss is [0.00631544 ]
+Epoch: 0001 loss_train: 0.02230147 loss_val: 0.03818996 time: 5421.3665s
+Batch 0, loss is [0.00222991 ]
+Epoch: 0002 loss_train: 0.01997110 loss_val: 0.03172952 time: 5416.2079s
+Batch 0, loss is [0.00139763 ]
+Epoch: 0003 loss_train: 0.01848311 loss_val: 0.02991677 time: 5419.6341s
+Batch 0, loss is [0.00109337 ]
+Epoch: 0004 loss_train: 0.01731869 loss_val: 0.03024503 time: 5423.2408s
+Batch 0, loss is [0.00094374 ]
+Epoch: 0005 loss_train: 0.01625588 loss_val: 0.02919292 time: 5429.3188s
+Batch 0, loss is [0.00075609 ]
+Epoch: 0006 loss_train: 0.01540146 loss_val: 0.02899937 time: 5497.1321s
+Batch 0, loss is [0.00064070 ]
+Epoch: 0007 loss_train: 0.01454784 loss_val: 0.02995887 time: 5537.7613s
+Batch 0, loss is [0.00060850 ]
+Epoch: 0008 loss_train: 0.01386657 loss_val: 0.02996305 time: 5461.2549s
+Batch 0, loss is [0.00050999 ]
+Epoch: 0009 loss_train: 0.01325667 loss_val: 0.03191380 time: 5482.8335s
+Batch 0, loss is [0.00053773 ]
+Epoch: 0010 loss_train: 0.01298277 loss_val: 0.02859002 time: 5472.9500s
+Batch 0, loss is [0.00049905 ]
+Epoch: 0011 loss_train: 0.01250011 loss_val: 0.02695601 time: 5476.7572s
+Batch 0, loss is [0.00042902 ]
+Epoch: 0012 loss_train: 0.01224283 loss_val: 0.02629072 time: 5470.7936s
+Batch 0, loss is [0.00039025 ]
+Epoch: 0013 loss_train: 0.01206089 loss_val: 0.02584873 time: 5471.5884s
+Batch 0, loss is [0.00035659 ]
+Epoch: 0014 loss_train: 0.01191163 loss_val: 0.02551629 time: 5468.0187s
+Batch 0, loss is [0.00032616 ]
+Epoch: 0015 loss_train: 0.01178099 loss_val: 0.02536310 time: 5474.6235s
+Optimization Finished!
+Total time elapsed: 81929.5142s
+Loading 15th epoch
+Batch 0
+Prediction Finished!
+Total time elapsed: 257.9918s

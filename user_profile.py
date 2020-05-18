@@ -7,16 +7,12 @@ team_profiles = db['team_profiles']
 
 repo_core_targets = db['repo_core_targets']
 user_contri_repo = {}
-# user_contri_repo_train = {}
 for row in repo_core_targets.find():
     repo = row['repo']
     for user in row['core_users']:
         if not user in user_contri_repo:
             user_contri_repo[user] = {}
-        # if not user in user_contri_repo_train:
-        #     user_contri_repo_train[user] = {}
         user_contri_repo[user][repo] = row['core_users'][user]
-        # user_contri_repo_train[user][repo] = row['core_users'][user]
     for user in row['target_users']:
         if not user in user_contri_repo:
             user_contri_repo[user] = {}
@@ -70,14 +66,3 @@ for user in user_contri_repo:
     user_profiles.insert_one(profile)
 
     cnt += 1
-
-# db.drop_collection('user_profiles_train')
-# user_profiles = db['user_profiles_train']
-# cnt = 0
-# for user in user_contri_repo_train:
-#     print(cnt)
-#     profile = user_feature(user_contri_repo_train[user],repo_profiles)
-#     profile['user'] = user
-#     user_profiles.insert_one(profile)
-
-#     cnt += 1
