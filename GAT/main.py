@@ -96,9 +96,9 @@ def train(epoch,train_loader,val_loader):
                 continue
         output = model(repo,repo_users,users,user_edges,teams,team_users)
         loss_train = loss(output,target)
+        losses_train.append(loss_train.item())
         loss_train.backward()
         optimizer.step()
-        losses_train.append(loss_train.item())
 
 
         if batch_id % 1000 == 0:
