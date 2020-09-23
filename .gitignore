@@ -9,3 +9,5 @@
 *.pdf
 *.link
 *.vsdx
+*.out
+*.pyc
