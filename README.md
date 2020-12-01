@@ -10,6 +10,3 @@ mongoexport --collection=repo_profiles --db=gtr --out=repo_profiles.json
 mongoexport --collection=team_profiles --db=gtr --out=team_profiles.json
 mongoexport --collection=user_profiles --db=gtr --out=user_profiles.json
 
-202.120.38.3:11022
-123456
-
