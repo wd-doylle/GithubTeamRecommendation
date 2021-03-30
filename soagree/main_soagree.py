@@ -34,7 +34,7 @@ parser.add_argument('--user_interest_file', type=str, default="user_interests_tr
 parser.add_argument('--team_interest_file', type=str, default="team_interests_target.json")
 parser.add_argument('--pretrained', type=str, default=None)
 parser.add_argument('--out_file', type=str, default="soagree_team_score")
-parser.add_argument('--balance', type=int, default=1, help='Alternative architectures')
+parser.add_argument('--balance', type=int, default=1)
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()

@@ -10,7 +10,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from model import GAT
-from model_alt import GAT_alt
 from dataset import GATDataset
 from predict import predict
 

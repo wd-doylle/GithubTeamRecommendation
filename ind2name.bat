@@ -1,3 +1,4 @@
+rem convert indices to names in recommendation results
 python recommend_ind2name.py gat_team_score_5.json recommend_gat_5.json
 python recommend_ind2name.py gat_team_score_10.json recommend_gat_10.json
 python recommend_ind2name.py gat_team_score_30.json recommend_gat_30.json
